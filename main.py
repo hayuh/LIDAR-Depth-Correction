@@ -1,8 +1,10 @@
+from typing import Tuple
 import numpy as np
 import torch
 import torchvision
 from skspatial.objects import Points, Plane
-from matplotlib import Path
+import matplotlib.pyplot as plt
+from matplotlib.path import Path
 
 # outputs grayscale on standardized values
 def depth_to_grayscale(depth_image):
@@ -40,17 +42,19 @@ def get_fixed_depth(x, y, normal, d):
     return (d - a * x - b * y) / c
 
 def planar_fit(depth_image, four_points):
-    four_points = sort_four_points(four_points)
-    x, y = depth_image
-    x, y = x.flatten(), y.flatten()
-    points = np.vstack((x,y)).T 
-    p = Path(four_points)
+    four_points_indice = sort_four_points(four_points)
+    points = np.empty(((depth_image.shape[0]) * (depth_image.shape[1]), 2))
+    for i in range(depth_image.shape[0]):
+        for j in range(depth_image.shape[1]):
+            points[i * depth_image.shape[1] + j] = [i, j]
+    
+    p = Path(four_points_indice)
     grid = p.contains_points(points)
     mask = grid.reshape(depth_image.shape)
     
-    points = Points(four_points)
-    plane = Plane.best_fit(points)
-    d = plane.point * plane.normal
+    points_4 = Points(four_points)
+    plane = Plane.best_fit(points_4)
+    d = np.sum(plane.point * plane.normal)
 
     for i in range(depth_image.shape[0]):
         for j in range(depth_image.shape[1]):
@@ -59,3 +63,24 @@ def planar_fit(depth_image, four_points):
                 depth_image[i][j] = point_depth_fixed
     
     return depth_image
+
+def test_planar_fit():
+    image = np.random.rand(10, 10)
+    four_points = [(4, 4, 1), (6, 4, 1), (6, 6, 1), (4, 6, 1)]
+    fixed = planar_fit(image, four_points)
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    for i in range(fixed.shape[0]):
+        for j in range(fixed.shape[1]):
+            ax.scatter(i, j, fixed[i][j])
+
+    ax.set_xlabel('X Label')
+    ax.set_ylabel('Y Label')
+    ax.set_zlabel('Z Label')
+
+    plt.show()
+
+
+if __name__ == '__main__':
+    test_planar_fit()
