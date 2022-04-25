@@ -27,6 +27,11 @@ def testing():
         print(child)
 
 
+###########################################################################
+
+def variance_grid_to_four_points(variance_grid):
+    return
+
 
 
 
@@ -64,23 +69,21 @@ def planar_fit(depth_image, four_points):
     
     return depth_image
 
+##########################################################################
+
 def test_planar_fit():
-    image = np.random.rand(10, 10)
-    four_points = [(4, 4, 1), (6, 4, 1), (6, 6, 1), (4, 6, 1)]
+    image = np.random.rand(100, 100)
+    four_points = [(40, 40, 0.77), (60, 40, 0.1), (60, 60, 0.3), (40, 60, 0.5)]
     fixed = planar_fit(image, four_points)
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
 
-    for i in range(fixed.shape[0]):
-        for j in range(fixed.shape[1]):
-            ax.scatter(i, j, fixed[i][j])
-
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    ax.set_zlabel('Z Label')
-
+    plt.imshow(fixed, cmap='gray')
     plt.show()
 
+def examine_data(path):
+    image = np.load(path)
+    plt.imshow(image, cmap='gray')
+    plt.show()
 
 if __name__ == '__main__':
-    test_planar_fit()
+    #test_planar_fit()
+    examine_data('./data/depth/depth_image_1649863438937787220.npy')
