@@ -4,8 +4,8 @@ import pandas as pd
 
 
 
-depth_img_array = np.load('depth_two_window.npy') #720 1280-length arrays
-color_img_array = np.load('color_two_window.npy')
+depth_img_array = np.load('depth_one_window.npy') #720 1280-length arrays
+color_img_array = np.load('color_one_window.npy')
 # convert array into dataframe
 DF_depth = pd.DataFrame(depth_img_array)
 #DF_color = pd.DataFrame(color_img_array)
