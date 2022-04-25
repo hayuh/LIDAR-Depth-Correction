@@ -4,13 +4,15 @@ import pandas as pd
 
 
 
-depth_img_array = np.load('depth_image_1650298896740195817.npy') #720 1280-length arrays
-color_img_array = np.load('color_image_1650298896750529763.npy')
+depth_img_array = np.load('depth_two_window.npy') #720 1280-length arrays
+color_img_array = np.load('color_two_window.npy')
 # convert array into dataframe
-DF = pd.DataFrame(depth_img_array)
+DF_depth = pd.DataFrame(depth_img_array)
+#DF_color = pd.DataFrame(color_img_array)
   
 # save the dataframe as a csv file
-DF.to_csv("depth_img.csv")
+DF_depth.to_csv("depth_img.csv")
+#DF_color.to_csv("color_img.csv")
 
 plt.imshow(depth_img_array, cmap='gray')
 plt.show()
