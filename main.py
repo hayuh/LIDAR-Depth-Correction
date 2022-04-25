@@ -29,6 +29,22 @@ def testing():
 
 ###########################################################################
 
+def standardize_input(depth_image):
+    return (depth_image - depth_image.mean()) / (depth_image.std())
+
+
+def depth_to_variance_grid(depth_image):
+    grid = np.zeros(depth_image.shape)
+    for i in range(depth_image.shape[0]):
+        for j in range(depth_image.shape[1]):
+            if not (i == 0 or i == depth_image.shape[0] - 1 or j == 0 or j == depth_image.shape[1] - 1):
+                kernel = np.array([depth_image[i-1][j-1], depth_image[i-1][j], depth_image[i-1][j+1],
+                                   depth_image[i][j-1], depth_image[i][j], depth_image[i][j+1],
+                                   depth_image[i+1][j-1], depth_image[i+1][j], depth_image[i+1][j+1]])
+                grid[i][j] = np.var(kernel)
+    return grid
+
+
 def variance_grid_to_four_points(variance_grid):
     return
 
@@ -81,9 +97,17 @@ def test_planar_fit():
 
 def examine_data(path):
     image = np.load(path)
-    plt.imshow(image, cmap='gray')
+    plt.imshow(image)
+    plt.show()
+
+def test_variance_grid(path):
+    image = np.load(path)
+    standardized = standardize_input(image)
+    grid = depth_to_variance_grid(standardized)
+    plt.imshow(grid, cmap='gray')
     plt.show()
 
 if __name__ == '__main__':
     #test_planar_fit()
-    examine_data('./data/depth/depth_image_1649863438937787220.npy')
+    examine_data('./test_color.npy')
+    #test_variance_grid('./test.npy')
