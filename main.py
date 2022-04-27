@@ -5,6 +5,7 @@ import torchvision
 from skspatial.objects import Points, Plane
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
+from skimage.measure import label, regionprops
 
 # outputs grayscale on standardized values
 def depth_to_grayscale(depth_image):
@@ -33,16 +34,26 @@ def standardize_input(depth_image):
     return (depth_image - depth_image.mean()) / (depth_image.std())
 
 
-def depth_to_variance_grid(depth_image):
+def depth_to_variance_grid(depth_image, kernel_inc):
     grid = np.zeros(depth_image.shape)
     for i in range(depth_image.shape[0]):
         for j in range(depth_image.shape[1]):
-            if not (i == 0 or i == depth_image.shape[0] - 1 or j == 0 or j == depth_image.shape[1] - 1):
-                kernel = np.array([depth_image[i-1][j-1], depth_image[i-1][j], depth_image[i-1][j+1],
-                                   depth_image[i][j-1], depth_image[i][j], depth_image[i][j+1],
-                                   depth_image[i+1][j-1], depth_image[i+1][j], depth_image[i+1][j+1]])
+            if not (i < kernel_inc or i > depth_image.shape[0] - kernel_inc - 1 or j < kernel_inc or j > depth_image.shape[1] - kernel_inc - 1):
+                kernel = np.zeros((kernel_inc * 2 + 1, kernel_inc * 2 + 1))
+                for i_ in range(-kernel_inc, kernel_inc + 1):
+                    for j_ in range(-kernel_inc, kernel_inc + 1):
+                        kernel[i_ + kernel_inc][j_ + kernel_inc] = depth_image[i+i_][j+j_]
                 grid[i][j] = np.var(kernel)
     return grid
+
+def get_all_zeros(depth_image):
+    return (depth_image != 0)
+
+def get_bounding_box(depth_image):
+    mask = get_all_zeros(depth_image)
+    labels = label(mask)
+    props = regionprops(labels)
+    print(props)
 
 
 def variance_grid_to_four_points(variance_grid):
@@ -98,16 +109,27 @@ def test_planar_fit():
 def examine_data(path):
     image = np.load(path)
     plt.imshow(image)
+    #plt.imshow(image)
     plt.show()
 
 def test_variance_grid(path):
     image = np.load(path)
     standardized = standardize_input(image)
-    grid = depth_to_variance_grid(standardized)
+    grid = depth_to_variance_grid(standardized, 10)
     plt.imshow(grid, cmap='gray')
+    plt.show()
+
+def fix_depth_with_known_corners(image_path, corner_indices):
+    depth_image = np.load(image_path)
+    x1, y1, x2, y2, x3, y3, x4, y4 = corner_indices
+    four_points = [(x1, y1, depth_image[x1, y1]), (x2, y2, depth_image[x2, y2]), (x3, y3, depth_image[x3, y3]), (x4, y4, depth_image[x4, y4])]
+    fixed = planar_fit(depth_image, four_points)
+    np.save('./depth_two_window_fixed.npy', fixed)
+    plt.imshow(fixed)
     plt.show()
 
 if __name__ == '__main__':
     #test_planar_fit()
-    examine_data('./test_color.npy')
-    #test_variance_grid('./test.npy')
+    #examine_data('./depth_two_window.npy')
+    #test_variance_grid('./test1.npy')
+    fix_depth_with_known_corners('./depth_two_window.npy', [72, 381, 593, 338, 601, 554, 77, 590])
