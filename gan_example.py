@@ -1,26 +1,37 @@
-#Inspired by: https://www.youtube.com/watch?v=Mng57Tj18pc&t=1837s
-import numpy as np
-from matplotlib import pyplot as plt
-import pandas as pd
-import tensorflow as tf
-from tensorflow import keras
+#!/usr/bin/env python
+__author__ = "Sreenivas Bhattiprolu"
+__license__ = "Feel free to copy, I appreciate if you acknowledge Python for Microscopists"
+
+#EXAMPLE GAN WITH MNIST DATASET
+# https://youtu.be/xBX2VlDgd4I   #Introduction video
+# https://youtu.be/Mng57Tj18pc   #Keras implementation video. 
+
+"""
+FC GAN example below
+
+
+References from the video: 
+https://www.thispersondoesnotexist.com/
+http://www.wisdom.weizmann.ac.il/~vision/courses/2018_2/Advanced_Topics_in_Computer_Vision/files/DomainTransfer.pdf
+"""
+
+from keras.datasets import mnist
 from keras.layers import Input, Dense, Reshape, Flatten
 from keras.layers import BatchNormalization
 from keras.layers import LeakyReLU
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
 import matplotlib.pyplot as plt
-from keras.datasets import mnist
-import psutil
+import numpy as np
 
 #Define input image dimensions
 #Large images take too much time and resources.
-img_rows = 720
-img_cols = 1280
+img_rows = 28
+img_cols = 28
 channels = 1
 img_shape = (img_rows, img_cols, channels)
 
-
+##########################################################################
 #Given input of noise (latent) vector, the Generator produces an image.
 def build_generator():
 
@@ -51,6 +62,7 @@ def build_generator():
     img = model(noise)    #Generated image
 
     return Model(noise, img)
+
 #Alpha — α is a hyperparameter which controls the underlying value to which the
 #function saturates negatives network inputs.
 #Momentum — Speed up the training
@@ -78,16 +90,17 @@ def build_discriminator():
     return Model(img, validity)
 #The validity is the Discriminator’s guess of input being real or not.
 
+
 #Now that we have constructed our two models it’s time to pit them against each other.
 #We do this by defining a training function, loading the data set, re-scaling our training
 #images and setting the ground truths. 
-def train(epochs, batch_size=2, save_interval=10):
+def train(epochs, batch_size=128, save_interval=50):
 
-    # Load the dataset. Dim: 10x720x1280
-    X_train = load_data
+    # Load the dataset
+    (X_train, _), (_, _) = mnist.load_data()
 
     # Convert to float and Rescale -1 to 1 (Can also do 0 to 1)
-    X_train = (X_train.astype(np.float16) - 127.5) / 127.5
+    X_train = (X_train.astype(np.float32) - 127.5) / 127.5
 
 #Add channels dimension. As the input to our gen and discr. has a shape 28x28x1.
     X_train = np.expand_dims(X_train, axis=3) 
@@ -176,19 +189,12 @@ def save_imgs(epoch):
             axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray')
             axs[i,j].axis('off')
             cnt += 1
-    fig.savefig("images/mnist_%d.png" % epoch)
+    fig.savefig("%d.png" % epoch)
     plt.close()
 #This function saves our images for us to view
 
-load_data = np.zeros((3, 720, 1280))
-load_data[0] = np.load('61.125\depth_image_1652108090807780171.npy')
-load_data[1] = np.load('86.75\depth_image_1652109334245600312.npy')
-load_data[2] = np.load('88.5\depth_image_1652108912547216057.npy')
-#load_data[3] = np.load('100\depth_image_1652107419965833808.npy')
-#load_data[4] = np.load('102.25\depth_image_1652109163666183263.npy')
-#load_data[5] = np.load('106\depth_image_1652108478517283367.npy')
-#load_data[6] = np.load('113.38\depth_image_1652107776730755283.npy')
-#load_data[7] = np.load('148\depth_image_1652108688105927426.npy')
+
+##############################################################################
 
 #Let us also define our optimizer for easy use later on.
 #That way if you change your mind, you can change it easily here
@@ -236,7 +242,7 @@ combined = Model(z, valid)
 combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
 
-train(epochs=10, batch_size=2, save_interval=10)
+train(epochs=2000, batch_size=32, save_interval=10)
 
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..
@@ -248,26 +254,3 @@ generator.save('generator_model.h5')  #Test the model on GAN4_predict...
 #Epochs dictate the number of backward and forward propagations, the batch_size
 #indicates the number of training samples per backward/forward propagation, and the
 #sample_interval specifies after how many epochs we call our sample_image function.
-
-##VISUALIZE
-"""
-depth_img_array = np.load('86.75\depth_image_1652109334245600312.npy') #720 1280-length arrays
-color_img_array = np.load('61.125\color_image_1652108090835074281.npy')
-# convert array into dataframe
-DF_depth = pd.DataFrame(depth_img_array)
-DF_color = pd.DataFrame(color_img_array)
-  
-# save the dataframe as a csv file
-DF_depth.to_csv("depth_img.csv")
-DF_color.to_csv("color_img.csv")
-print(depth_img_array.shape)
-#print(color_img_array.shape)
-
-plt.imshow(depth_img_array, cmap='gray')
-plt.show()
-
-#plt.imshow(color_img_array, cmap='gray')
-plt.show()
-"""
-print(psutil.cpu_times())
-#test
