@@ -38,9 +38,9 @@ def build_generator():
     model.add(Dense(512))
     model.add(LeakyReLU(alpha=0.2))
     model.add(BatchNormalization(momentum=0.8))
-    model.add(Dense(1024))
-    model.add(LeakyReLU(alpha=0.2))
-    model.add(BatchNormalization(momentum=0.8))
+    #model.add(Dense(1024))
+    #model.add(LeakyReLU(alpha=0.2))
+    #model.add(BatchNormalization(momentum=0.8))
     
     model.add(Dense(np.prod(img_shape), activation='tanh')) #OOM error
     model.add(Reshape(img_shape))
