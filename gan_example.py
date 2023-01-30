@@ -242,7 +242,7 @@ combined = Model(z, valid)
 combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
 
-train(epochs=2000, batch_size=32, save_interval=10)
+train(epochs=20, batch_size=10, save_interval=10)
 
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..

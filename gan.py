@@ -42,14 +42,16 @@ def build_generator():
     model.add(LeakyReLU(alpha=0.2))
     model.add(BatchNormalization(momentum=0.8))
     
-    model.add(Dense(np.prod(img_shape), activation='tanh'))
+    model.add(Dense(np.prod(img_shape), activation='tanh')) #OOM error
     model.add(Reshape(img_shape))
 
     model.summary()
 
     noise = Input(shape=noise_shape)
     img = model(noise)    #Generated image
-
+    print('MEMORY 4')
+    print(psutil.virtual_memory())
+    print(psutil.cpu_times())
     return Model(noise, img)
 #Alpha — α is a hyperparameter which controls the underlying value to which the
 #function saturates negatives network inputs.
@@ -74,14 +76,16 @@ def build_discriminator():
 
     img = Input(shape=img_shape)
     validity = model(img)
-
+    print('MEMORY 3')
+    print(psutil.virtual_memory())
+    print(psutil.cpu_times())
     return Model(img, validity)
 #The validity is the Discriminator’s guess of input being real or not.
 
 #Now that we have constructed our two models it’s time to pit them against each other.
 #We do this by defining a training function, loading the data set, re-scaling our training
 #images and setting the ground truths. 
-def train(epochs, batch_size=2, save_interval=10):
+def train(epochs, batch_size, save_interval):
 
     # Load the dataset. Dim: 10x720x1280
     X_train = load_data
@@ -145,7 +149,7 @@ def train(epochs, batch_size=2, save_interval=10):
         # Train the generator with noise as x and 1 as y. 
         # Again, 1 as the output as it is adversarial and if generator did a great
         #job of folling the discriminator then the output would be 1 (true)
-        g_loss = combined.train_on_batch(noise, valid_y)
+        g_loss = combined.train_on_batch(noise, valid_y) #STOPS HERE
 
 
 #Additionally, in order for us to keep track of our training process, we print the
@@ -179,7 +183,9 @@ def save_imgs(epoch):
     fig.savefig("images/mnist_%d.png" % epoch)
     plt.close()
 #This function saves our images for us to view
-
+print('MEMORY 1')
+print(psutil.virtual_memory())
+print(psutil.cpu_times())
 load_data = np.zeros((3, 720, 1280))
 load_data[0] = np.load('61.125\depth_image_1652108090807780171.npy')
 load_data[1] = np.load('86.75\depth_image_1652109334245600312.npy')
@@ -189,7 +195,9 @@ load_data[2] = np.load('88.5\depth_image_1652108912547216057.npy')
 #load_data[5] = np.load('106\depth_image_1652108478517283367.npy')
 #load_data[6] = np.load('113.38\depth_image_1652107776730755283.npy')
 #load_data[7] = np.load('148\depth_image_1652108688105927426.npy')
-
+print('MEMORY 2')
+print(psutil.virtual_memory())
+print(psutil.cpu_times())
 #Let us also define our optimizer for easy use later on.
 #That way if you change your mind, you can change it easily here
 optimizer = Adam(0.0002, 0.5)  #Learning rate and momentum.
@@ -199,6 +207,7 @@ optimizer = Adam(0.0002, 0.5)  #Learning rate and momentum.
 #pick the loss function and the type of metric to keep track.                 
 #Binary cross entropy as we are doing prediction and it is a better
 #loss function compared to MSE or other. 
+
 discriminator = build_discriminator()
 discriminator.compile(loss='binary_crossentropy',
     optimizer=optimizer,
@@ -235,8 +244,11 @@ valid = discriminator(img)  #Validity check on the generated image
 combined = Model(z, valid)
 combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
+print('MEMORY 5')
+print(psutil.virtual_memory())
+print(psutil.cpu_times())
 
-train(epochs=10, batch_size=2, save_interval=10)
+train(epochs=20, batch_size=10, save_interval=10)
 
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..
@@ -247,27 +259,6 @@ generator.save('generator_model.h5')  #Test the model on GAN4_predict...
                 
 #Epochs dictate the number of backward and forward propagations, the batch_size
 #indicates the number of training samples per backward/forward propagation, and the
-#sample_interval specifies after how many epochs we call our sample_image function.
+#sample_interval specifies after how many epochs we call our sample_image function
 
-##VISUALIZE
-"""
-depth_img_array = np.load('86.75\depth_image_1652109334245600312.npy') #720 1280-length arrays
-color_img_array = np.load('61.125\color_image_1652108090835074281.npy')
-# convert array into dataframe
-DF_depth = pd.DataFrame(depth_img_array)
-DF_color = pd.DataFrame(color_img_array)
-  
-# save the dataframe as a csv file
-DF_depth.to_csv("depth_img.csv")
-DF_color.to_csv("color_img.csv")
-print(depth_img_array.shape)
-#print(color_img_array.shape)
 
-plt.imshow(depth_img_array, cmap='gray')
-plt.show()
-
-#plt.imshow(color_img_array, cmap='gray')
-plt.show()
-"""
-print(psutil.cpu_times())
-#test
