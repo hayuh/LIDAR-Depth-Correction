@@ -94,6 +94,8 @@ def build_discriminator():
 #Now that we have constructed our two models it’s time to pit them against each other.
 #We do this by defining a training function, loading the data set, re-scaling our training
 #images and setting the ground truths. 
+
+#NOTE: Usage of epoch here is wrong. Should be iterations since epoch is when all samples go through network.
 def train(epochs, batch_size=128, save_interval=50):
 
     # Load the dataset
@@ -242,7 +244,7 @@ combined = Model(z, valid)
 combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
 
-train(epochs=20, batch_size=10, save_interval=10)
+train(epochs=100, batch_size=32, save_interval=10)
 
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..
