@@ -35,9 +35,9 @@ def build_generator():
     model.add(Dense(256, input_shape=noise_shape))
     model.add(LeakyReLU(alpha=0.2))
     model.add(BatchNormalization(momentum=0.8))
-    model.add(Dense(512))
-    model.add(LeakyReLU(alpha=0.2))
-    model.add(BatchNormalization(momentum=0.8))
+    #model.add(Dense(512))
+    #model.add(LeakyReLU(alpha=0.2))
+    #model.add(BatchNormalization(momentum=0.8))
     #model.add(Dense(1024))
     #model.add(LeakyReLU(alpha=0.2))
     #model.add(BatchNormalization(momentum=0.8))
@@ -180,7 +180,7 @@ def save_imgs(epoch):
             axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray')
             axs[i,j].axis('off')
             cnt += 1
-    fig.savefig("images/mnist_%d.png" % epoch)
+    fig.savefig("%d.png" % epoch)
     plt.close()
 #This function saves our images for us to view
 print('MEMORY 1')
@@ -248,7 +248,7 @@ print('MEMORY 5')
 print(psutil.virtual_memory())
 print(psutil.cpu_times())
 
-train(epochs=20, batch_size=10, save_interval=10)
+train(epochs=20, batch_size=2, save_interval=10)
 
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..
