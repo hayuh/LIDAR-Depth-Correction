@@ -254,7 +254,7 @@ print('MEMORY 5')
 print(psutil.virtual_memory())
 print(psutil.cpu_times())
 
-train(epochs=20, batch_size=2, save_interval=10)
+train(epochs=21, batch_size=2, save_interval=10)
 
 #Measuring time to train
 toc = time.perf_counter()
