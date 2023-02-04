@@ -12,6 +12,9 @@ from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 from keras.datasets import mnist
 import psutil
+import time
+
+tic = time.perf_counter()
 
 #Define input image dimensions
 #Large images take too much time and resources.
@@ -69,8 +72,8 @@ def build_discriminator():
     model.add(Flatten(input_shape=img_shape))
     model.add(Dense(512))
     model.add(LeakyReLU(alpha=0.2))
-    model.add(Dense(256))
-    model.add(LeakyReLU(alpha=0.2))
+    #model.add(Dense(256))
+    #model.add(LeakyReLU(alpha=0.2))
     model.add(Dense(1, activation='sigmoid'))
     model.summary()
 
@@ -85,6 +88,9 @@ def build_discriminator():
 #Now that we have constructed our two models it’s time to pit them against each other.
 #We do this by defining a training function, loading the data set, re-scaling our training
 #images and setting the ground truths. 
+#Epochs dictate the number of backward and forward propagations, the batch_size
+#indicates the number of training samples per backward/forward propagation, and the
+#sample_interval specifies after how many epochs we call our sample_image function
 def train(epochs, batch_size, save_interval):
 
     # Load the dataset. Dim: 10x720x1280
@@ -186,15 +192,15 @@ def save_imgs(epoch):
 print('MEMORY 1')
 print(psutil.virtual_memory())
 print(psutil.cpu_times())
-load_data = np.zeros((3, 720, 1280))
+load_data = np.zeros((8, 720, 1280))
 load_data[0] = np.load('61.125\depth_image_1652108090807780171.npy')
 load_data[1] = np.load('86.75\depth_image_1652109334245600312.npy')
 load_data[2] = np.load('88.5\depth_image_1652108912547216057.npy')
-#load_data[3] = np.load('100\depth_image_1652107419965833808.npy')
-#load_data[4] = np.load('102.25\depth_image_1652109163666183263.npy')
-#load_data[5] = np.load('106\depth_image_1652108478517283367.npy')
-#load_data[6] = np.load('113.38\depth_image_1652107776730755283.npy')
-#load_data[7] = np.load('148\depth_image_1652108688105927426.npy')
+load_data[3] = np.load('100\depth_image_1652107419965833808.npy')
+load_data[4] = np.load('102.25\depth_image_1652109163666183263.npy')
+load_data[5] = np.load('106\depth_image_1652108478517283367.npy')
+load_data[6] = np.load('113.38\depth_image_1652107776730755283.npy')
+load_data[7] = np.load('148\depth_image_1652108688105927426.npy')
 print('MEMORY 2')
 print(psutil.virtual_memory())
 print(psutil.cpu_times())
@@ -250,15 +256,16 @@ print(psutil.cpu_times())
 
 train(epochs=20, batch_size=2, save_interval=10)
 
+#Measuring time to train
+toc = time.perf_counter()
+print(f"Completed in {toc - tic:0.4f} seconds")
+
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..
 #Compare with GAN4
 
-generator.save('generator_model.h5')  #Test the model on GAN4_predict...
+generator.save('generator_model.h5')  #Test the model on GAN4_predict... currently, issues with saving the model
 #Change epochs back to 30K
                 
-#Epochs dictate the number of backward and forward propagations, the batch_size
-#indicates the number of training samples per backward/forward propagation, and the
-#sample_interval specifies after how many epochs we call our sample_image function
 
 
