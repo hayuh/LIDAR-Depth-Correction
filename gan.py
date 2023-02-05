@@ -172,6 +172,7 @@ def train(epochs, batch_size, save_interval):
 #sample_image function. Which looks as follows.
 
 def save_imgs(epoch):
+    tic1 = time.perf_counter()
     r, c = 5, 5
     noise = np.random.normal(0, 1, (r * c, 100))
     gen_imgs = generator.predict(noise)
@@ -188,6 +189,9 @@ def save_imgs(epoch):
             cnt += 1
     fig.savefig("%d.png" % epoch)
     plt.close()
+    toc1 = time.perf_counter()
+    print(f"Make images: {toc1 - tic1:0.4f} seconds")
+
 #This function saves our images for us to view
 print('MEMORY 1')
 print(psutil.virtual_memory())
@@ -254,7 +258,7 @@ print('MEMORY 5')
 print(psutil.virtual_memory())
 print(psutil.cpu_times())
 
-train(epochs=21, batch_size=2, save_interval=10)
+train(epochs=11, batch_size=2, save_interval=10)
 
 #Measuring time to train
 toc = time.perf_counter()
