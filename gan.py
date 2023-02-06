@@ -38,9 +38,9 @@ def build_generator():
     model.add(Dense(256, input_shape=noise_shape))
     model.add(LeakyReLU(alpha=0.2))
     model.add(BatchNormalization(momentum=0.8))
-    #model.add(Dense(512))
-    #model.add(LeakyReLU(alpha=0.2))
-    #model.add(BatchNormalization(momentum=0.8))
+    model.add(Dense(512))
+    model.add(LeakyReLU(alpha=0.2))
+    model.add(BatchNormalization(momentum=0.8))
     #model.add(Dense(1024))
     #model.add(LeakyReLU(alpha=0.2))
     #model.add(BatchNormalization(momentum=0.8))
@@ -69,8 +69,8 @@ def build_discriminator():
     model.add(Flatten(input_shape=img_shape))
     model.add(Dense(512))
     model.add(LeakyReLU(alpha=0.2))
-    #model.add(Dense(256))
-    #model.add(LeakyReLU(alpha=0.2))
+    model.add(Dense(256))
+    model.add(LeakyReLU(alpha=0.2))
     model.add(Dense(1, activation='sigmoid'))
     model.summary()
 
@@ -91,7 +91,7 @@ def train(epochs, batch_size, save_interval):
     X_train = load_data
 
     # Convert to float and Rescale -1 to 1 (Can also do 0 to 1)
-    X_train = (X_train.astype(np.float16) - 127.5) / 127.5
+    #X_train = (X_train.astype(np.float16) - 127.5) / 127.5
 
 #Add channels dimension. As the input to our gen and discr. has a shape 28x28x1.
     X_train = np.expand_dims(X_train, axis=3) 
@@ -180,7 +180,7 @@ def save_imgs(epoch):
         for j in range(c):
             axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray') #gen_imgs[cnt, :,:,0] = (720, 1280)
             axs[i,j].axis('off')
-            np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
+            #np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
             cnt += 1
     fig.savefig("%d.png" % epoch)
     plt.close()
@@ -259,7 +259,7 @@ combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
 
 
-train(epochs=11, batch_size=2, save_interval=10)
+train(epochs=31, batch_size=8, save_interval=10)
 
 #Measuring time to train
 toc = time.perf_counter()
