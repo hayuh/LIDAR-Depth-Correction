@@ -198,6 +198,19 @@ load_data[5] = np.load('106\depth_image_1652108478517283367.npy')
 load_data[6] = np.load('113.38\depth_image_1652107776730755283.npy')
 load_data[7] = np.load('148\depth_image_1652108688105927426.npy')
 
+#Code to save sample imgs
+'''
+fig, axs = plt.subplots(4,2)
+cnt = 0
+for i in range(4):
+    for j in range(2):
+        axs[i,j].imshow(load_data[cnt], cmap='gray') #gen_imgs[cnt, :,:,0] = (720, 1280)
+        axs[i,j].axis('off')
+        cnt += 1
+fig.savefig("real_sample_img.png")
+plt.close()
+'''
+
 #Let us also define our optimizer for easy use later on.
 #That way if you change your mind, you can change it easily here
 optimizer = Adam(0.0002, 0.5)  #Learning rate and momentum.
