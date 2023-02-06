@@ -52,9 +52,6 @@ def build_generator():
 
     noise = Input(shape=noise_shape)
     img = model(noise)    #Generated image
-    print('MEMORY 4')
-    print(psutil.virtual_memory())
-    print(psutil.cpu_times())
     return Model(noise, img)
 #Alpha — α is a hyperparameter which controls the underlying value to which the
 #function saturates negatives network inputs.
@@ -79,9 +76,6 @@ def build_discriminator():
 
     img = Input(shape=img_shape)
     validity = model(img)
-    print('MEMORY 3')
-    print(psutil.virtual_memory())
-    print(psutil.cpu_times())
     return Model(img, validity)
 #The validity is the Discriminator’s guess of input being real or not.
 
@@ -118,13 +112,13 @@ def train(epochs, batch_size, save_interval):
 
         # Select a random half batch of real images
         idx = np.random.randint(0, X_train.shape[0], half_batch)
-        imgs = X_train[idx]
+        imgs = X_train[idx] #training set
 
  
         noise = np.random.normal(0, 1, (half_batch, 100))
 
         # Generate a half batch of fake images
-        gen_imgs = generator.predict(noise)
+        gen_imgs = generator.predict(noise) #validation set
 
         # Train the discriminator on real and fake images, separately
         #Research showed that separate training is more effective. 
@@ -178,14 +172,15 @@ def save_imgs(epoch):
     gen_imgs = generator.predict(noise)
 
     # Rescale images 0 - 1
-    gen_imgs = 0.5 * gen_imgs + 0.5
+    #gen_imgs = 0.5 * gen_imgs + 0.5 #shape: (25, 720, 1280, 1). 25 720x1280 arrays
 
     fig, axs = plt.subplots(r, c)
     cnt = 0
     for i in range(r):
         for j in range(c):
-            axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray')
+            axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray') #gen_imgs[cnt, :,:,0] = (720, 1280)
             axs[i,j].axis('off')
+            np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
             cnt += 1
     fig.savefig("%d.png" % epoch)
     plt.close()
@@ -193,9 +188,6 @@ def save_imgs(epoch):
     print(f"Make images: {toc1 - tic1:0.4f} seconds")
 
 #This function saves our images for us to view
-print('MEMORY 1')
-print(psutil.virtual_memory())
-print(psutil.cpu_times())
 load_data = np.zeros((8, 720, 1280))
 load_data[0] = np.load('61.125\depth_image_1652108090807780171.npy')
 load_data[1] = np.load('86.75\depth_image_1652109334245600312.npy')
@@ -205,9 +197,7 @@ load_data[4] = np.load('102.25\depth_image_1652109163666183263.npy')
 load_data[5] = np.load('106\depth_image_1652108478517283367.npy')
 load_data[6] = np.load('113.38\depth_image_1652107776730755283.npy')
 load_data[7] = np.load('148\depth_image_1652108688105927426.npy')
-print('MEMORY 2')
-print(psutil.virtual_memory())
-print(psutil.cpu_times())
+
 #Let us also define our optimizer for easy use later on.
 #That way if you change your mind, you can change it easily here
 optimizer = Adam(0.0002, 0.5)  #Learning rate and momentum.
@@ -254,9 +244,7 @@ valid = discriminator(img)  #Validity check on the generated image
 combined = Model(z, valid)
 combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
-print('MEMORY 5')
-print(psutil.virtual_memory())
-print(psutil.cpu_times())
+
 
 train(epochs=11, batch_size=2, save_interval=10)
 
