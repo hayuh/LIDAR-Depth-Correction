@@ -224,7 +224,20 @@ def scale_images(images, new_shape):
     return asarray(images_list)
 
 # calculate frechet inception distance
-def calculate_fid(model, images1, images2):
+def calculate_fid(images1, images2):
+    # prepare the inception v3 model
+    model = InceptionV3(include_top=False, pooling='avg', input_shape=(299,299,3))
+    # resize images
+    images1 = scale_images(load_data[0:25], (299,299,3)) #0-255
+    images2 = scale_images(gen_img, (299,299,3)) #0-1
+    print('Scaled', images1.shape, images2.shape)
+    # pre-process images
+    images1 = preprocess_input(images1) #-1 to 1
+    for image in images1:
+        plt.imshow(image, cmap='gray')
+    images2 = preprocess_input(images2) #-0.999 to -0.992
+    for image in images2:
+        plt.imshow(image, cmap='gray')
     # calculate activations
     act1 = model.predict(images1)
     act2 = model.predict(images2)
@@ -291,7 +304,7 @@ combined = Model(z, valid)
 combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
 
-train(epochs=501, batch_size=32, save_interval=100)
+train(epochs=11, batch_size=32, save_interval=10)
 
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..
@@ -304,22 +317,9 @@ print(f"Completed in {toc - tic:0.4f} seconds")
 (load_data, _), (_, _) = mnist.load_data()
 gen_img = np.zeros((25, 28, 28))
 for i in range(0,25):
-    gen_img[i] = np.load('epoch500_gen_img%d.npy' % i)
-# prepare the inception v3 model
-model = InceptionV3(include_top=False, pooling='avg', input_shape=(299,299,3))
-# resize images
-images1 = scale_images(load_data[0:25], (299,299,3))
-images2 = scale_images(gen_img, (299,299,3))
-print('Scaled', images1.shape, images2.shape)
-# pre-process images
-images1 = preprocess_input(images1)
-for image in images1:
-    plt.imshow(image, cmap='gray')
-images2 = preprocess_input(images2)
-for image in images2:
-    plt.imshow(image, cmap='gray')
+    gen_img[i] = np.load('epoch10_gen_img%d.npy' % i)
 # fid between images1 and images1
-fid = calculate_fid(model, images1, images2)
+fid = calculate_fid(load_data[0:25], gen_img)
 print('FID (same): %.3f' % fid)
 
 generator.save('generator_model.h5')  #Test the model on GAN4_predict...
