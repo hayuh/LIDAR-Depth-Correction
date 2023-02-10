@@ -23,6 +23,23 @@ from keras.models import Sequential, Model
 from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 import numpy as np
+import time
+
+# example of calculating the frechet inception distance in Keras
+import numpy
+from numpy import cov
+from numpy import trace
+from numpy import iscomplexobj
+from numpy import asarray
+from numpy.random import randint
+from scipy.linalg import sqrtm
+from keras.applications.inception_v3 import InceptionV3
+from keras.applications.inception_v3 import preprocess_input
+from keras.datasets.mnist import load_data
+from skimage.transform import resize #used 'python -m pip install scikit-image'
+
+
+tic = time.perf_counter()
 
 #Define input image dimensions
 #Large images take too much time and resources.
@@ -190,10 +207,40 @@ def save_imgs(epoch):
         for j in range(c):
             axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray')
             axs[i,j].axis('off')
+            np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
             cnt += 1
     fig.savefig("%d.png" % epoch)
     plt.close()
-#This function saves our images for us to view
+
+def scale_images(images, new_shape):
+    images_list = list()
+    for image in images:
+        plt.imshow(image, cmap='gray')
+        # resize with nearest neighbor interpolation
+        new_image = resize(image, new_shape, 0)
+        plt.imshow(new_image, cmap='gray')
+        # store
+        images_list.append(new_image)
+    return asarray(images_list)
+
+# calculate frechet inception distance
+def calculate_fid(model, images1, images2):
+    # calculate activations
+    act1 = model.predict(images1)
+    act2 = model.predict(images2)
+    # calculate mean and covariance statistics
+    mu1, sigma1 = act1.mean(axis=0), cov(act1, rowvar=False)
+    mu2, sigma2 = act2.mean(axis=0), cov(act2, rowvar=False)
+    # calculate sum squared difference between means
+    ssdiff = numpy.sum((mu1 - mu2)**2.0)
+    # calculate sqrt of product between cov
+    covmean = sqrtm(sigma1.dot(sigma2))
+    # check and correct imaginary numbers from sqrt
+    if iscomplexobj(covmean):
+        covmean = covmean.real
+    # calculate score
+    fid = ssdiff + trace(sigma1 + sigma2 - 2.0 * covmean)
+    return fid
 
 
 ##############################################################################
@@ -244,11 +291,36 @@ combined = Model(z, valid)
 combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
 
-train(epochs=100, batch_size=32, save_interval=10)
+train(epochs=501, batch_size=32, save_interval=100)
 
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..
 #Compare with GAN4
+
+#Measuring time to train
+toc = time.perf_counter()
+print(f"Completed in {toc - tic:0.4f} seconds")
+
+(load_data, _), (_, _) = mnist.load_data()
+gen_img = np.zeros((25, 28, 28))
+for i in range(0,25):
+    gen_img[i] = np.load('epoch500_gen_img%d.npy' % i)
+# prepare the inception v3 model
+model = InceptionV3(include_top=False, pooling='avg', input_shape=(299,299,3))
+# resize images
+images1 = scale_images(load_data[0:25], (299,299,3))
+images2 = scale_images(gen_img, (299,299,3))
+print('Scaled', images1.shape, images2.shape)
+# pre-process images
+images1 = preprocess_input(images1)
+for image in images1:
+    plt.imshow(image, cmap='gray')
+images2 = preprocess_input(images2)
+for image in images2:
+    plt.imshow(image, cmap='gray')
+# fid between images1 and images1
+fid = calculate_fid(model, images1, images2)
+print('FID (same): %.3f' % fid)
 
 generator.save('generator_model.h5')  #Test the model on GAN4_predict...
 #Change epochs back to 30K
