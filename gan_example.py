@@ -183,22 +183,26 @@ def train(X_train, epochs, batch_size=128, save_interval=50):
 # Plot the progress
         
         print ("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss))
-
+        '''
         # If at save interval => save generated image samples
         if epoch % save_interval == 0:
+            save_imgs(epoch)
+        '''
+        if epoch == 1000 or epoch == 500 or epoch == 6000:
             save_imgs(epoch)
 
 #when the specific sample_interval is hit, we call the
 #sample_image function. Which looks as follows.
 
 def save_imgs(epoch):
+    
     r, c = 5, 5
     noise = np.random.normal(0, 1, (r * c, 100))
     gen_imgs = generator.predict(noise)
 
     # Rescale images 0 - 255
     gen_imgs = 127.5 * gen_imgs + 127.5
-
+    '''
     fig, axs = plt.subplots(r, c)
     cnt = 0
     for i in range(r):
@@ -208,14 +212,15 @@ def save_imgs(epoch):
             #np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
             cnt += 1
     fig.savefig("%d.png" % epoch)
-
+    plt.close()
+    '''
     #calculate FID
     idx = np.random.randint(0, mnist_data.shape[0], 25)
     fid = calculate_fid(mnist_data[idx], gen_imgs[:,:,:,0]) #input is 25 28x28 arrays
     fidDict["epoch"].append(epoch)
     fidDict["fid"].append(fid)
 
-    plt.close()
+    
 
 def scale_images(images, new_shape):
     images_list = list()
@@ -313,7 +318,7 @@ combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
 fidDict = {"epoch":[], "fid":[]}
 
-train(X_train=mnist_data, epochs=2001, batch_size=32, save_interval=100)
+train(X_train=mnist_data, epochs=6001, batch_size=32, save_interval=1000)
 
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..
@@ -324,15 +329,16 @@ toc = time.perf_counter()
 print(f"Completed in {toc - tic:0.4f} seconds")
 
 '''
-gen_img = np.zeros((25, 28, 28))
-for i in range(0,25):
-    gen_img[i] = np.load('epoch10_gen_img%d.npy' % i)
 
-# fid between images1 and images1
-idx = np.random.randint(0, mnist_data.shape[0], 25)
-idx1 = np.random.randint(0, mnist_data.shape[0], 25)
-fid = calculate_fid(mnist_data[idx], mnist_data[idx1])
-print('FID: %.3f' % fid)
+# fid between real images
+real_fid = []
+for i in range(0,10):
+    idx = np.random.randint(0, mnist_data.shape[0], 25)
+    idx1 = np.random.randint(0, mnist_data.shape[0], 25)
+    fid = calculate_fid(mnist_data[idx], mnist_data[idx1])
+    real_fid.append(fid)
+print(real_fid)
+print(sum(real_fid)/len(real_fid))
 '''
 #Plotting FID scores
 print(fidDict)
