@@ -113,10 +113,8 @@ def build_discriminator():
 #images and setting the ground truths. 
 
 #NOTE: Usage of epoch here is wrong. Should be iterations since epoch is when all samples go through network.
-def train(epochs, batch_size=128, save_interval=50):
+def train(X_train, epochs, batch_size=128, save_interval=50):
 
-    # Load the dataset
-    (X_train, _), (_, _) = mnist.load_data()
 
     # Convert to float and Rescale -1 to 1 (Can also do 0 to 1)
     X_train = (X_train.astype(np.float32) - 127.5) / 127.5
@@ -199,7 +197,7 @@ def save_imgs(epoch):
     gen_imgs = generator.predict(noise)
 
     # Rescale images 0 - 1
-    gen_imgs = 0.5 * gen_imgs + 0.5
+    gen_imgs = 127.5 * gen_imgs + 127.5
 
     fig, axs = plt.subplots(r, c)
     cnt = 0
@@ -228,8 +226,8 @@ def calculate_fid(images1, images2):
     # prepare the inception v3 model
     model = InceptionV3(include_top=False, pooling='avg', input_shape=(299,299,3))
     # resize images
-    images1 = scale_images(load_data[0:25], (299,299,3)) #0-255
-    images2 = scale_images(gen_img, (299,299,3)) #0-1
+    images1 = scale_images(images1, (299,299,3)) #0-255
+    images2 = scale_images(images2, (299,299,3)) #0-255
     print('Scaled', images1.shape, images2.shape)
     # pre-process images
     images1 = preprocess_input(images1) #-1 to 1
@@ -303,8 +301,9 @@ valid = discriminator(img)  #Validity check on the generated image
 combined = Model(z, valid)
 combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
-
-train(epochs=11, batch_size=32, save_interval=10)
+#Load dataset
+(mnist_data, _), (_, _) = mnist.load_data()
+train(X_train=mnist_data, epochs=11, batch_size=32, save_interval=10)
 
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..
@@ -314,12 +313,12 @@ train(epochs=11, batch_size=32, save_interval=10)
 toc = time.perf_counter()
 print(f"Completed in {toc - tic:0.4f} seconds")
 
-(load_data, _), (_, _) = mnist.load_data()
 gen_img = np.zeros((25, 28, 28))
 for i in range(0,25):
     gen_img[i] = np.load('epoch10_gen_img%d.npy' % i)
 # fid between images1 and images1
-fid = calculate_fid(load_data[0:25], gen_img)
+idx = np.random.randint(0, mnist_data.shape[0], 25)
+fid = calculate_fid(mnist_data[idx], gen_img)
 print('FID (same): %.3f' % fid)
 
 generator.save('generator_model.h5')  #Test the model on GAN4_predict...
