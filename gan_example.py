@@ -196,7 +196,7 @@ def save_imgs(epoch):
     noise = np.random.normal(0, 1, (r * c, 100))
     gen_imgs = generator.predict(noise)
 
-    # Rescale images 0 - 1
+    # Rescale images 0 - 255
     gen_imgs = 127.5 * gen_imgs + 127.5
 
     fig, axs = plt.subplots(r, c)
@@ -205,9 +205,16 @@ def save_imgs(epoch):
         for j in range(c):
             axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray')
             axs[i,j].axis('off')
-            np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
+            #np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
             cnt += 1
     fig.savefig("%d.png" % epoch)
+
+    #calculate FID
+    idx = np.random.randint(0, mnist_data.shape[0], 25)
+    fid = calculate_fid(mnist_data[idx], gen_imgs[:,:,:,0]) #input is 25 28x28 arrays
+    fidDict["epoch"].append(epoch)
+    fidDict["fid"].append(fid)
+
     plt.close()
 
 def scale_images(images, new_shape):
@@ -303,7 +310,10 @@ combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
 #Load dataset
 (mnist_data, _), (_, _) = mnist.load_data()
-train(X_train=mnist_data, epochs=11, batch_size=32, save_interval=10)
+
+fidDict = {"epoch":[], "fid":[]}
+
+train(X_train=mnist_data, epochs=2001, batch_size=32, save_interval=100)
 
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..
@@ -313,13 +323,25 @@ train(X_train=mnist_data, epochs=11, batch_size=32, save_interval=10)
 toc = time.perf_counter()
 print(f"Completed in {toc - tic:0.4f} seconds")
 
+'''
 gen_img = np.zeros((25, 28, 28))
 for i in range(0,25):
     gen_img[i] = np.load('epoch10_gen_img%d.npy' % i)
+
 # fid between images1 and images1
 idx = np.random.randint(0, mnist_data.shape[0], 25)
-fid = calculate_fid(mnist_data[idx], gen_img)
-print('FID (same): %.3f' % fid)
+idx1 = np.random.randint(0, mnist_data.shape[0], 25)
+fid = calculate_fid(mnist_data[idx], mnist_data[idx1])
+print('FID: %.3f' % fid)
+'''
+#Plotting FID scores
+print(fidDict)
+fig, ax = plt.subplots()
+line = ax.plot(fidDict["epoch"], fidDict["fid"], 'o', color='b')
+plt.xlabel("Epoch")
+plt.ylabel("FID score")
+plt.show()
+fig.savefig("FID.png")
 
 generator.save('generator_model.h5')  #Test the model on GAN4_predict...
 #Change epochs back to 30K
