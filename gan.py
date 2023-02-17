@@ -14,6 +14,19 @@ from keras.datasets import mnist
 import psutil
 import time
 
+# example of calculating the frechet inception distance in Keras
+import numpy
+from numpy import cov
+from numpy import trace
+from numpy import iscomplexobj
+from numpy import asarray
+from numpy.random import randint
+from scipy.linalg import sqrtm
+from keras.applications.inception_v3 import InceptionV3
+from keras.applications.inception_v3 import preprocess_input
+from keras.datasets.mnist import load_data
+from skimage.transform import resize #used 'python -m pip install scikit-image'
+
 tic = time.perf_counter()
 
 #Define input image dimensions
@@ -45,7 +58,7 @@ def build_generator():
     #model.add(LeakyReLU(alpha=0.2))
     #model.add(BatchNormalization(momentum=0.8))
     
-    model.add(Dense(np.prod(img_shape), activation='tanh')) #OOM error
+    model.add(Dense(np.prod(img_shape), activation='tanh')) #originally tanh, changed to linear because outputs are not -1 to 1.
     model.add(Reshape(img_shape))
 
     model.summary()
@@ -71,7 +84,7 @@ def build_discriminator():
     model.add(LeakyReLU(alpha=0.2))
     model.add(Dense(256))
     model.add(LeakyReLU(alpha=0.2))
-    model.add(Dense(1, activation='sigmoid'))
+    model.add(Dense(1, activation='sigmoid')) #sigmoid activation function b/c output 0-1.
     model.summary()
 
     img = Input(shape=img_shape)
@@ -85,10 +98,10 @@ def build_discriminator():
 #Epochs dictate the number of backward and forward propagations, the batch_size
 #indicates the number of training samples per backward/forward propagation, and the
 #sample_interval specifies after how many epochs we call our sample_image function
-def train(epochs, batch_size, save_interval):
+def train(X_train, epochs, batch_size, save_interval):
 
     # Load the dataset. Dim: 10x720x1280
-    X_train = load_data
+    #X_train = load_data
 
     # Convert to float and Rescale -1 to 1 (Can also do 0 to 1)
     #X_train = (X_train.astype(np.float16) - 127.5) / 127.5
@@ -161,18 +174,18 @@ def train(epochs, batch_size, save_interval):
         # If at save interval => save generated image samples
         if epoch % save_interval == 0:
             save_imgs(epoch)
+        
 
 #when the specific sample_interval is hit, we call the
 #sample_image function. Which looks as follows.
 
 def save_imgs(epoch):
-    tic1 = time.perf_counter()
     r, c = 5, 5
     noise = np.random.normal(0, 1, (r * c, 100))
     gen_imgs = generator.predict(noise)
 
-    # Rescale images 0 - 1
-    #gen_imgs = 0.5 * gen_imgs + 0.5 #shape: (25, 720, 1280, 1). 25 720x1280 arrays
+    # Rescale images 0 - 9000, which is range of Intel Realsense LIDAR camera
+    gen_imgs = (gen_imgs + 1)*4500 #shape: (25, 720, 1280, 1). 25 720x1280 arrays
 
     fig, axs = plt.subplots(r, c)
     cnt = 0
@@ -180,13 +193,63 @@ def save_imgs(epoch):
         for j in range(c):
             axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray') #gen_imgs[cnt, :,:,0] = (720, 1280)
             axs[i,j].axis('off')
-            #np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
+            np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
             cnt += 1
     fig.savefig("%d.png" % epoch)
     plt.close()
-    toc1 = time.perf_counter()
-    print(f"Make images: {toc1 - tic1:0.4f} seconds")
 
+    #calculate FID
+    idx = np.random.randint(0, load_data.shape[0], 25) #Randomly select 25 idx between 0 and 8 (len of load_data)
+    fid = calculate_fid(load_data[idx], gen_imgs[:,:,:,0]) #input is 25 720x1280 arrays
+    fidDict["epoch"].append(epoch)
+    fidDict["fid"].append(fid)
+
+
+
+def scale_images(images, new_shape):
+    images_list = list()
+    for image in images:
+        plt.imshow(image, cmap='gray')
+        # resize with nearest neighbor interpolation
+        new_image = resize(image, new_shape, 0)
+        plt.imshow(new_image, cmap='gray')
+        # store
+        images_list.append(new_image)
+    return asarray(images_list)
+
+# calculate frechet inception distance
+def calculate_fid(images1, images2):
+    # prepare the inception v3 model
+    model = InceptionV3(include_top=False, pooling='avg', input_shape=(299,299,3))
+    # resize images
+    images1 = scale_images(images1, (299,299,3)) #images1 orig Value range:0-9506. new value range:0-9432.5
+    images2 = scale_images(images2, (299,299,3)) #images2 orig Value range:-0.06-0.06. new value range:-0.017-0.0189
+    print('Scaled', images1.shape, images2.shape)
+    # pre-process images
+    images1 = preprocess_input(images1) #-1 to 1
+    for image in images1:
+        plt.imshow(image, cmap='gray')
+    images2 = preprocess_input(images2) #-0.999 to -0.992
+    for image in images2:
+        plt.imshow(image, cmap='gray')
+    # calculate activations
+    act1 = model.predict(images1)
+    act2 = model.predict(images2)
+    # calculate mean and covariance statistics
+    mu1, sigma1 = act1.mean(axis=0), cov(act1, rowvar=False)
+    mu2, sigma2 = act2.mean(axis=0), cov(act2, rowvar=False)
+    # calculate sum squared difference between means
+    ssdiff = numpy.sum((mu1 - mu2)**2.0)
+    # calculate sqrt of product between cov
+    covmean = sqrtm(sigma1.dot(sigma2))
+    # check and correct imaginary numbers from sqrt
+    if iscomplexobj(covmean):
+        covmean = covmean.real
+    # calculate score
+    fid = ssdiff + trace(sigma1 + sigma2 - 2.0 * covmean)
+    return fid
+
+##############################################################################
 #This function saves our images for us to view
 load_data = np.zeros((8, 720, 1280))
 load_data[0] = np.load('61.125\depth_image_1652108090807780171.npy')
@@ -257,13 +320,34 @@ valid = discriminator(img)  #Validity check on the generated image
 combined = Model(z, valid)
 combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
+fidDict = {"epoch":[], "fid":[]}
 
-
-train(epochs=31, batch_size=8, save_interval=10)
+train(X_train=load_data, epochs=11, batch_size=8, save_interval=10)
 
 #Measuring time to train
 toc = time.perf_counter()
 print(f"Completed in {toc - tic:0.4f} seconds")
+
+'''
+# fid between real images
+real_fid = []
+for i in range(0,10):
+    idx = np.random.randint(0, mnist_data.shape[0], 25)
+    idx1 = np.random.randint(0, mnist_data.shape[0], 25)
+    fid = calculate_fid(mnist_data[idx], mnist_data[idx1])
+    real_fid.append(fid)
+print(real_fid)
+print(sum(real_fid)/len(real_fid))
+'''
+
+#Plotting FID scores
+print(fidDict)
+fig, ax = plt.subplots()
+line = ax.plot(fidDict["epoch"], fidDict["fid"], 'o', color='b')
+plt.xlabel("Epoch")
+plt.ylabel("FID score")
+plt.show()
+fig.savefig("FID.png")
 
 #Save model for future use to generate fake images
 #Not tested yet... make sure right model is being saved..
