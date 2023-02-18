@@ -184,20 +184,20 @@ def save_imgs(epoch):
     noise = np.random.normal(0, 1, (r * c, 100))
     gen_imgs = generator.predict(noise)
 
-    # Rescale images 0 - 9000, which is range of Intel Realsense LIDAR camera
+    # Rescale images 0 - 9000, which is range of Intel Realsense LIDAR camera in mm
     gen_imgs = (gen_imgs + 1)*4500 #shape: (25, 720, 1280, 1). 25 720x1280 arrays
-
+    
     fig, axs = plt.subplots(r, c)
     cnt = 0
     for i in range(r):
         for j in range(c):
             axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray') #gen_imgs[cnt, :,:,0] = (720, 1280)
             axs[i,j].axis('off')
-            np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
+            #np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
             cnt += 1
     fig.savefig("%d.png" % epoch)
     plt.close()
-
+    
     #calculate FID
     idx = np.random.randint(0, load_data.shape[0], 25) #Randomly select 25 idx between 0 and 8 (len of load_data)
     fid = calculate_fid(load_data[idx], gen_imgs[:,:,:,0]) #input is 25 720x1280 arrays
@@ -322,7 +322,7 @@ combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
 fidDict = {"epoch":[], "fid":[]}
 
-train(X_train=load_data, epochs=11, batch_size=8, save_interval=10)
+train(X_train=load_data, epochs=201, batch_size=8, save_interval=20)
 
 #Measuring time to train
 toc = time.perf_counter()
@@ -332,9 +332,9 @@ print(f"Completed in {toc - tic:0.4f} seconds")
 # fid between real images
 real_fid = []
 for i in range(0,10):
-    idx = np.random.randint(0, mnist_data.shape[0], 25)
-    idx1 = np.random.randint(0, mnist_data.shape[0], 25)
-    fid = calculate_fid(mnist_data[idx], mnist_data[idx1])
+    idx = np.random.randint(0, load_data.shape[0], 25)
+    idx1 = np.random.randint(0, load_data.shape[0], 25)
+    fid = calculate_fid(load_data[idx], load_data[idx1])
     real_fid.append(fid)
 print(real_fid)
 print(sum(real_fid)/len(real_fid))
