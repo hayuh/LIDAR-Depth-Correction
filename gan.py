@@ -51,9 +51,9 @@ def build_generator():
     model.add(Dense(256, input_shape=noise_shape))
     model.add(LeakyReLU(alpha=0.2))
     model.add(BatchNormalization(momentum=0.8))
-    model.add(Dense(512))
-    model.add(LeakyReLU(alpha=0.2))
-    model.add(BatchNormalization(momentum=0.8))
+    #model.add(Dense(512))
+    #model.add(LeakyReLU(alpha=0.2))
+    #model.add(BatchNormalization(momentum=0.8))
     #model.add(Dense(1024))
     #model.add(LeakyReLU(alpha=0.2))
     #model.add(BatchNormalization(momentum=0.8))
@@ -82,8 +82,8 @@ def build_discriminator():
     model.add(Flatten(input_shape=img_shape))
     model.add(Dense(512))
     model.add(LeakyReLU(alpha=0.2))
-    model.add(Dense(256))
-    model.add(LeakyReLU(alpha=0.2))
+    #model.add(Dense(256))
+    #model.add(LeakyReLU(alpha=0.2))
     model.add(Dense(1, activation='sigmoid')) #sigmoid activation function b/c output 0-1.
     model.summary()
 
