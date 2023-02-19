@@ -193,7 +193,8 @@ def save_imgs(epoch):
         for j in range(c):
             axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray') #gen_imgs[cnt, :,:,0] = (720, 1280)
             axs[i,j].axis('off')
-            #np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
+            if cnt == 24:
+                np.save("epoch%d_gen_img%d" % (epoch,cnt), gen_imgs[cnt, :,:,0]) #saving gen_imgs in npy array
             cnt += 1
     fig.savefig("%d.png" % epoch)
     plt.close()
@@ -261,7 +262,7 @@ load_data[5] = np.load('106\depth_image_1652108478517283367.npy')
 load_data[6] = np.load('113.38\depth_image_1652107776730755283.npy')
 load_data[7] = np.load('148\depth_image_1652108688105927426.npy')
 
-#Code to save sample imgs
+#Code to save real window sample imgs
 '''
 fig, axs = plt.subplots(4,2)
 cnt = 0
@@ -322,7 +323,7 @@ combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
 fidDict = {"epoch":[], "fid":[]}
 
-train(X_train=load_data, epochs=201, batch_size=8, save_interval=20)
+train(X_train=load_data, epochs=101, batch_size=8, save_interval=20)
 
 #Measuring time to train
 toc = time.perf_counter()
