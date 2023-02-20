@@ -323,7 +323,7 @@ combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
 fidDict = {"epoch":[], "fid":[]}
 
-train(X_train=load_data, epochs=101, batch_size=8, save_interval=20)
+train(X_train=load_data, epochs=301, batch_size=8, save_interval=50)
 
 #Measuring time to train
 toc = time.perf_counter()
